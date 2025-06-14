@@ -42,4 +42,9 @@ public class UserService {
                 .map(user -> new UserDTO(user.getId(), user.getEmail(), user.getRole()))
                 .orElseThrow(() -> new RuntimeException("User not found"));
     }
+
+    public String extractEmailFromToken(String token) {
+        return jwtUtil.extractEmail(token);
+    }
+
 }
