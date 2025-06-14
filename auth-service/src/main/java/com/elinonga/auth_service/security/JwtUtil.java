@@ -2,28 +2,32 @@ package com.elinonga.auth_service.security;
 
 import com.elinonga.auth_service.user.User;
 import io.jsonwebtoken.*;
+import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import javax.crypto.SecretKey;
 import java.util.Date;
 
 @Component
 public class JwtUtil {
-
+    
     @Value("${jwt.secret}")
     private String jwtSecret;
-
+    
     @Value("${jwt.expiration}")
     private long jwtExpiration;
 
     public String generateToken(User user) {
+        SecretKey key = Keys.hmacShaKeyFor(jwtSecret.getBytes());
+        
         return Jwts.builder()
-                .setSubject(user.getEmail())
+                .subject(user.getEmail())
                 .claim("role", user.getRole())
                 .claim("user_id", user.getId().toString())
-                .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + jwtExpiration))
-                .signWith(SignatureAlgorithm.HS512, jwtSecret)
+                .issuedAt(new Date())
+                .expiration(new Date(System.currentTimeMillis() + jwtExpiration))
+                .signWith(key, Jwts.SIG.HS512)
                 .compact();
     }
 
@@ -41,9 +45,12 @@ public class JwtUtil {
     }
 
     private Claims getClaims(String token) {
+        SecretKey key = Keys.hmacShaKeyFor(jwtSecret.getBytes());
+        
         return Jwts.parser()
-                .setSigningKey(jwtSecret)
-                .parseClaimsJws(token)
-                .getBody();
+                .verifyWith(key)
+                .build()
+                .parseSignedClaims(token)
+                .getPayload();
     }
 }
