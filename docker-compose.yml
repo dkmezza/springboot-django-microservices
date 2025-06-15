@@ -3,9 +3,8 @@ version: "3.8"
 services:
   postgres:
     image: postgres:15-alpine
-    container_name: auth_postgres
+    container_name: microservices_postgres
     environment:
-      POSTGRES_DB: auth_db
       POSTGRES_USER: mezza
       POSTGRES_PASSWORD: ndaghafijo
       POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256"
@@ -13,20 +12,20 @@ services:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U mezza -d auth_db"]
+      test: ["CMD-SHELL", "pg_isready -U mezza"]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 30s
     restart: unless-stopped
     networks:
-      - auth-network
+      - microservices-network
 
   auth-service:
     build:
-      context: .
-      dockerfile: Dockerfile
+      context: ./auth-service
     container_name: auth_service
     ports:
       - "8080:8080"
@@ -35,14 +34,11 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/auth_db
       SPRING_DATASOURCE_USERNAME: mezza
       SPRING_DATASOURCE_PASSWORD: ndaghafijo
-
       # JWT Configuration
       JWT_SECRET: mySecretKeyForJWTTokenGenerationThatShouldBeAtLeast256BitsLongForHS512Algorithm
       JWT_EXPIRATION: 86400000
-
       # Spring Profile
       SPRING_PROFILES_ACTIVE: production
-
       # JVM Options
       JAVA_OPTS: "-Xmx512m -Xms256m"
     depends_on:
@@ -57,12 +53,49 @@ services:
       retries: 3
       start_period: 60s
     networks:
-      - auth-network
+      - microservices-network
+
+  company-service:
+    build:
+      context: ./company-service
+      dockerfile: Dockerfile
+    container_name: company_service
+    ports:
+      - "8000:8000"
+    environment:
+      # Database Configuration
+      DB_NAME: company_db
+      DB_USER: mezza
+      DB_PASSWORD: ndaghafijo
+      DB_HOST: postgres
+      DB_PORT: 5432
+      # JWT Configuration (must match auth service)
+      JWT_SECRET: mySecretKeyForJWTTokenGenerationThatShouldBeAtLeast256BitsLongForHS512Algorithm
+      # Django Configuration
+      SECRET_KEY: django-insecure-company-service-docker-production-key-2024
+      DEBUG: "False"
+      ALLOWED_HOSTS: localhost,127.0.0.1,0.0.0.0,company-service
+      # Auth Service URL
+      AUTH_SERVICE_URL: http://auth-service:8080
+    depends_on:
+      postgres:
+        condition: service_healthy
+      auth-service:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/health/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 90s
+    networks:
+      - microservices-network
 
 volumes:
   pgdata:
     driver: local
 
 networks:
-  auth-network:
+  microservices-network:
     driver: bridge
