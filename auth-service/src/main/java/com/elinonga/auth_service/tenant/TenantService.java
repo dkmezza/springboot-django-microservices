@@ -39,6 +39,18 @@ public class TenantService {
         return new TenantDTO(t.getId(), t.getName(), t.getStatus(), t.getCreatedBy());
     }
 
+    public TenantDTO updateTenant(UUID id, TenantDTO dto) {
+        Tenant existing = tenantRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Tenant not found"));
+
+        existing.setName(dto.getName());
+        existing.setStatus(dto.getStatus());
+
+        Tenant updated = tenantRepository.save(existing);
+
+        return new TenantDTO(updated.getId(), updated.getName(), updated.getStatus(), updated.getCreatedBy());
+    }
+
     public void deleteTenant(UUID id) {
         tenantRepository.deleteById(id);
     }
