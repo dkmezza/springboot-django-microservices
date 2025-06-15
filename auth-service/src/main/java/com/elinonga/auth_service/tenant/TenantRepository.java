@@ -1,5 +1,8 @@
 package com.elinonga.auth_service.tenant;
 
-public class TenantRepository {
-    
+import java.util.UUID;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface TenantRepository extends JpaRepository<Tenant, UUID> {
 }
