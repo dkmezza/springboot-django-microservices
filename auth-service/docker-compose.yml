@@ -1,0 +1,31 @@
+version: "3.8"
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: auth_postgres
+    environment:
+      POSTGRES_DB: auth_db
+      POSTGRES_USER: mezza
+      POSTGRES_PASSWORD: ndaghafijo
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  auth-service:
+    build: ./auth-service
+    container_name: auth_service
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/auth_db
+      SPRING_DATASOURCE_USERNAME: mezza
+      SPRING_DATASOURCE_PASSWORD: ndaghafijo
+      JWT_SECRET: mySecretKeyForJWTTokenGenerationThatShouldBeAtLeast256BitsLongForHS512Algorithm
+      JWT_EXPIRATION: 86400000
+    depends_on:
+      - postgres
+
+volumes:
+  pgdata:
