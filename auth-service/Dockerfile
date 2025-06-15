@@ -1,4 +1,26 @@
-# Use official Eclipse Temurin Java runtime
+# Stage 1: Build the application
+FROM eclipse-temurin:21-jdk-alpine AS builder
+
+# Install Maven
+RUN apk add --no-cache maven
+
+WORKDIR /app
+
+# Copy Maven files first (for better caching)
+COPY pom.xml .
+COPY mvnw .
+COPY .mvn .mvn
+
+# Download dependencies (this layer will be cached)
+RUN mvn dependency:go-offline -B
+
+# Copy source code
+COPY src ./src
+
+# Build the application
+RUN mvn clean package -DskipTests
+
+# Stage 2: Runtime
 FROM eclipse-temurin:21-jre-alpine
 
 # Install curl for health checks
@@ -10,8 +32,8 @@ WORKDIR /app
 RUN addgroup -g 1001 -S appuser && \
     adduser -S appuser -u 1001 -G appuser
 
-# Copy the pre-built jar file
-COPY target/auth-service-0.0.1-SNAPSHOT.jar app.jar
+# Copy the built jar from builder stage
+COPY --from=builder /app/target/auth-service-0.0.1-SNAPSHOT.jar app.jar
 
 # Change ownership to non-root user
 RUN chown appuser:appuser app.jar
