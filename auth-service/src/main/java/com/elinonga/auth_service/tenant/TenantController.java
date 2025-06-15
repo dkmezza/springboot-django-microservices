@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -44,6 +45,11 @@ public class TenantController {
     @GetMapping("/{id}")
     public ResponseEntity<TenantDTO> get(@PathVariable UUID id) {
         return ResponseEntity.ok(tenantService.getTenant(id));
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<TenantDTO> update(@PathVariable UUID id, @RequestBody TenantDTO dto) {
+        return ResponseEntity.ok(tenantService.updateTenant(id, dto));
     }
 
     @DeleteMapping("/{id}")
