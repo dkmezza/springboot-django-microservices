@@ -1,5 +1,6 @@
 package com.elinonga.auth_service.config;
 
+import org.springdoc.core.models.GroupedOpenApi;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -36,5 +37,13 @@ public class SwaggerConfig {
                                         .scheme("bearer")
                                         .bearerFormat("JWT")
                                         .description("Enter JWT token")));
+    }
+
+    @Bean
+    public GroupedOpenApi publicApi() {
+        return GroupedOpenApi.builder()
+                .group("auth-service")
+                .packagesToScan("com.elinonga.auth_service")
+                .build();
     }
 }
