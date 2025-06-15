@@ -1,41 +1,17 @@
-# Multi-stage build for better production image
-FROM openjdk:21-jdk-slim as builder
+# Use official Eclipse Temurin Java runtime
+FROM eclipse-temurin:21-jre-alpine
 
 # Install curl for health checks
-RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
-
-WORKDIR /app
-
-# Copy Maven wrapper and pom.xml first for better caching
-COPY mvnw .
-COPY .mvn .mvn
-COPY pom.xml .
-
-# Make mvnw executable
-RUN chmod +x mvnw
-
-# Download dependencies (this layer will be cached if pom.xml doesn't change)
-RUN ./mvnw dependency:go-offline -B
-
-# Copy source code
-COPY src src
-
-# Build the application with tests
-RUN ./mvnw clean package -B
-
-# Runtime stage
-FROM openjdk:21-jre-slim
-
-# Install curl for health checks
-RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+RUN apk add --no-cache curl
 
 WORKDIR /app
 
 # Create non-root user for security
-RUN groupadd -r appuser && useradd -r -g appuser appuser
+RUN addgroup -g 1001 -S appuser && \
+    adduser -S appuser -u 1001 -G appuser
 
-# Copy jar from builder stage
-COPY --from=builder /app/target/auth-service-0.0.1-SNAPSHOT.jar app.jar
+# Copy the pre-built jar file
+COPY target/auth-service-0.0.1-SNAPSHOT.jar app.jar
 
 # Change ownership to non-root user
 RUN chown appuser:appuser app.jar
